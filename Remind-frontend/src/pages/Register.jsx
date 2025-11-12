@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import authBackgrounds from '../constants/authBackgrounds';
 import '../styles/auth.css';
 import { authApi } from '../api';
+import { useGoogleSocialLogin } from '../hooks/useGoogleSocialLogin';
+import { buildOAuthRedirectUrl } from '../utils/oauth';
 
 const socialProviders = [
   { id: 'google', label: 'Google', icon: '/Google_icon.svg' },
@@ -39,6 +41,17 @@ export default function Register() {
   const [statusMessage, setStatusMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSocialLoading, setIsSocialLoading] = useState(false);
+  const {
+    error: googleError,
+    isAuthenticating: isGoogleAuthenticating,
+    startGoogleLogin,
+  } = useGoogleSocialLogin();
+  const [isCheckingNickname, setIsCheckingNickname] = useState(false);
+  const [nicknameStatus, setNicknameStatus] = useState('');
+  const [isNicknameAvailable, setIsNicknameAvailable] = useState(null);
+  const [isPrivacyChecked, setIsPrivacyChecked] = useState(false);
+  const [isDataTransferChecked, setIsDataTransferChecked] = useState(false);
+  const [consentError, setConsentError] = useState('');
 
   useEffect(() => {
     if (!isSocialFlow && authApi.isAuthenticated()) {
@@ -59,7 +72,11 @@ export default function Register() {
 
   const dayOptions = useMemo(() => Array.from({ length: 31 }, (_, index) => (index + 1).toString()), []);
   const oauthRedirectUri = useMemo(
-    () => `${window.location.origin}/oauth/callback`,
+    () =>
+      buildOAuthRedirectUrl({
+        source: 'register',
+        persist: 'persist',
+      }),
     []
   );
 
@@ -71,6 +88,19 @@ export default function Register() {
       }
     }
   }, [isSocialFlow, socialEmail]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isSocialLoading) {
+        setIsSocialLoading(false);
+        setStatusMessage('');
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isSocialLoading]);
 
   const validateUserId = (value) => {
     const trimmedValue = value.trim();
@@ -108,13 +138,8 @@ export default function Register() {
       return '비밀번호를 입력해 주세요.';
     }
 
-    if (trimmedValue.length < 8 || trimmedValue.length > 64) {
-      return '비밀번호는 8자리에서 64자리 사이로 입력해 주세요.';
-    }
-
-    const complexity = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
-    if (!complexity.test(trimmedValue)) {
-      return '대소문자, 숫자를 모두 포함해야 합니다.';
+    if (trimmedValue.length < 8) {
+      return '비밀번호는 8자 이상으로 입력해 주세요.';
     }
 
     return '';
@@ -172,6 +197,16 @@ export default function Register() {
     if (error) {
       return;
     }
+    if (isNicknameAvailable === false) {
+      setSubmitError('이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해 주세요.');
+      return;
+    }
+
+    if (!isPrivacyChecked || !isDataTransferChecked) {
+      setConsentError('필수 항목에 모두 동의해 주세요.');
+      return;
+    }
+    setConsentError('');
 
     setSubmitError('');
     try {
@@ -180,6 +215,7 @@ export default function Register() {
         setStatusMessage('프로필을 설정하는 중입니다...');
         await authApi.updateProfile({
           nickname: userId.trim(),
+          profileComplete: true,
         });
         setStatusMessage('프로필이 저장되었습니다! 회고 화면으로 이동합니다.');
       } else {
@@ -189,6 +225,8 @@ export default function Register() {
             email: registerEmail.trim(),
             password: registerPassword,
             nickname: userId.trim(),
+            consentPrivacy: true,
+            consentDataTransfer: true,
           },
           { persist: true }
         );
@@ -208,20 +246,48 @@ export default function Register() {
       setSubmitError('Instagram 로그인은 아직 지원되지 않습니다.');
       return;
     }
-    try {
-      setSubmitError('');
-      setStatusMessage('소셜 로그인 페이지로 이동합니다...');
-      setIsSocialLoading(true);
-      const { url } = await authApi.getOAuthUrl(provider, oauthRedirectUri);
-      window.location.href = url;
-    } catch (error) {
-      setIsSocialLoading(false);
-      setStatusMessage('');
-      const message =
-        error.status === 503
-          ? '소셜 로그인 설정이 아직 완료되지 않았습니다. 이메일로 진행해 주세요.'
-          : error.message || '소셜 로그인에 실패했습니다.';
-      setSubmitError(message);
+    if (provider === 'google') {
+      if (googleError) {
+        setSubmitError(googleError);
+        return;
+      }
+      try {
+        setSubmitError('');
+        setStatusMessage('Google 계정으로 이동합니다...');
+        setIsSocialLoading(true);
+        const result = await startGoogleLogin({ persist: true });
+        if (result.isNew && result.user?.email) {
+          const params = new URLSearchParams({
+            step: '2',
+            mode: 'google',
+            email: result.user.email,
+          });
+          navigate(`/register?${params.toString()}`, { replace: true });
+          return;
+        }
+        navigate('/journals', { replace: true });
+      } catch (error) {
+        setSubmitError(error.message || 'Google 로그인에 실패했습니다.');
+      } finally {
+        setStatusMessage('');
+        setIsSocialLoading(false);
+      }
+      return;
+    }
+
+    if (provider === 'naver') {
+      try {
+        setSubmitError('');
+        setStatusMessage('소셜 로그인 페이지로 이동합니다...');
+        setIsSocialLoading(true);
+        const startUrl = authApi.buildOAuthStartUrl(provider, oauthRedirectUri);
+        window.location.href = startUrl;
+      } catch (error) {
+        setIsSocialLoading(false);
+        setStatusMessage('');
+        setSubmitError(error.message || '소셜 로그인에 실패했습니다. 다시 시도해 주세요.');
+      }
+      return;
     }
   };
 
@@ -235,8 +301,39 @@ export default function Register() {
   const handleUserIdChange = (event) => {
     const { value } = event.target;
     setUserId(value);
+    setNicknameStatus('');
+    setIsNicknameAvailable(null);
     if (isUserIdTouched) {
       setUserIdError(validateUserId(value));
+    }
+  };
+
+  const handleNicknameCheck = async () => {
+    const error = validateUserId(userId);
+    setIsUserIdTouched(true);
+    setUserIdError(error);
+    if (error) {
+      setNicknameStatus('');
+      setIsNicknameAvailable(null);
+      return;
+    }
+    try {
+      setIsCheckingNickname(true);
+      setSubmitError('');
+      setNicknameStatus('닉네임을 확인하고 있습니다...');
+      const result = await authApi.checkNicknameAvailability(userId.trim());
+      if (result.available) {
+        setNicknameStatus('사용 가능한 닉네임입니다.');
+        setIsNicknameAvailable(true);
+      } else {
+        setNicknameStatus('이미 사용 중인 닉네임입니다.');
+        setIsNicknameAvailable(false);
+      }
+    } catch (error) {
+      setNicknameStatus(error.message || '닉네임 확인에 실패했습니다. 다시 시도해 주세요.');
+      setIsNicknameAvailable(null);
+    } finally {
+      setIsCheckingNickname(false);
     }
   };
 
@@ -274,7 +371,11 @@ export default function Register() {
                   type="button"
                   key={provider.id}
                   onClick={() => handleSocialLogin(provider.id)}
-                  disabled={isSocialLoading}
+                  disabled={
+                    provider.id === 'google'
+                      ? isSocialLoading || isGoogleAuthenticating
+                      : isSocialLoading
+                  }
                 >
                   <img src={provider.icon} alt={`${provider.label} 아이콘`} />
                 </button>
@@ -356,25 +457,32 @@ export default function Register() {
               <label htmlFor="register-user-id">닉네임</label>
               <div className="input-with-button">
                 <div className={`input-wrapper ${userIdError ? 'has-error' : ''}`}>
-                  <div className="input-with-counter">
-                    <input
-                      id="register-user-id"
-                      type="text"
-                      maxLength={24}
-                      placeholder="닉네임을 입력해 주세요."
-                      value={userId}
-                      onChange={handleUserIdChange}
-                      onBlur={handleUserIdBlur}
-                      aria-invalid={Boolean(userIdError)}
-                      aria-describedby={userIdError ? 'register-user-id-error' : undefined}
-                    />
-                    <span className="input-counter">{userId.length} / 24</span>
-                  </div>
+                  <input
+                    id="register-user-id"
+                    type="text"
+                    maxLength={24}
+                    placeholder="닉네임을 입력해 주세요."
+                    value={userId}
+                    onChange={handleUserIdChange}
+                    onBlur={handleUserIdBlur}
+                    aria-invalid={Boolean(userIdError)}
+                    aria-describedby={userIdError ? 'register-user-id-error' : undefined}
+                  />
                 </div>
-                <button type="button" className="ghost-btn small" onClick={handleUserIdBlur}>
-                  확인
+                <button
+                  type="button"
+                  className="ghost-btn small"
+                  onClick={handleNicknameCheck}
+                  disabled={isCheckingNickname}
+                >
+                  {isCheckingNickname ? '확인 중...' : '확인'}
                 </button>
               </div>
+              {nicknameStatus && !userIdError && (
+                <p className={isNicknameAvailable ? 'success-text' : 'error-text'}>
+                  {nicknameStatus}
+                </p>
+              )}
               {userIdError && (
                 <p className="error-text" id="register-user-id-error">
                   {userIdError}
@@ -449,14 +557,33 @@ export default function Register() {
             <div className="consent-section">
               <h3>필수 항목</h3>
               <label className="checkbox-row">
-                <input type="checkbox" />
+                <input
+                  type="checkbox"
+                  checked={isPrivacyChecked}
+                  onChange={(event) => {
+                    setIsPrivacyChecked(event.target.checked);
+                    if (event.target.checked && isDataTransferChecked) {
+                      setConsentError('');
+                    }
+                  }}
+                />
                 개인정보 처리방침에 따른 내 개인 정보 수집 및 사용에 동의합니다.
               </label>
               <label className="checkbox-row">
-                <input type="checkbox" />
+                <input
+                  type="checkbox"
+                  checked={isDataTransferChecked}
+                  onChange={(event) => {
+                    setIsDataTransferChecked(event.target.checked);
+                    if (isPrivacyChecked && event.target.checked) {
+                      setConsentError('');
+                    }
+                  }}
+                />
                 Ndheim의 개인정보 처리방침에 따른 Ndheim 및 국내외 서비스 제공자에 대한 내 개인정보 이전에
                 동의합니다.
               </label>
+              {consentError && <p className="error-text">{consentError}</p>}
             </div>
 
             <div className="consent-section optional">
@@ -484,7 +611,11 @@ export default function Register() {
             {submitError && <p className="error-text">{submitError}</p>}
             {statusMessage && <p className="success-text">{statusMessage}</p>}
 
-            <button type="submit" className="primary full" disabled={isSubmitting}>
+            <button
+              type="submit"
+              className="primary full"
+              disabled={isSubmitting || !isPrivacyChecked || !isDataTransferChecked}
+            >
               {isSubmitting ? '계정 생성 중…' : '계정 만들기'}
             </button>
           </form>
