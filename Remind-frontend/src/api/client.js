@@ -1,5 +1,62 @@
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
+const DEFAULT_API_BASE_URL = 'http://localhost:4000';
+
+const inferNgrokBackendUrl = (origin) => {
+  try {
+    const url = new URL(origin);
+    if (!url.hostname.endsWith('.ngrok.io')) {
+      return null;
+    }
+    const [subdomain, ...rest] = url.hostname.split('.');
+    const backendSubdomain = subdomain.includes('-backend')
+      ? subdomain
+      : `${subdomain}-backend`;
+    return `${url.protocol}//${[backendSubdomain, ...rest].join('.')}`;
+  } catch (error) {
+    console.warn('Failed to infer ngrok backend URL', error);
+    return null;
+  }
+};
+
+const resolveApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_BASE_URL) {
+    return process.env.REACT_APP_API_BASE_URL;
+  }
+
+  if (typeof window === 'undefined') {
+    return DEFAULT_API_BASE_URL;
+  }
+
+  const runtimeValue =
+    window.__REMIND_API_BASE_URL || window.REMIND_API_BASE_URL;
+  if (runtimeValue) {
+    return runtimeValue;
+  }
+
+  const origin = window.location?.origin || '';
+
+  if (!origin) {
+    return DEFAULT_API_BASE_URL;
+  }
+
+  if (
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1') ||
+    origin.includes('0.0.0.0')
+  ) {
+    return DEFAULT_API_BASE_URL;
+  }
+
+  const ngrokUrl = inferNgrokBackendUrl(origin);
+  if (ngrokUrl) {
+    return ngrokUrl;
+  }
+
+  return origin;
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
 const STORAGE_KEY = 'remind_tokens';
+let shouldPersistTokens = true;
 
 let refreshPromise = null;
 
@@ -88,20 +145,37 @@ export const tokenStorage = {
 
 function readTokens() {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const rawLocal = window.localStorage.getItem(STORAGE_KEY);
+    if (rawLocal) {
+      shouldPersistTokens = true;
+      return JSON.parse(rawLocal);
+    }
+    const rawSession = window.sessionStorage.getItem(STORAGE_KEY);
+    if (rawSession) {
+      shouldPersistTokens = false;
+      return JSON.parse(rawSession);
+    }
+    return null;
   } catch (error) {
     console.error('Failed to read tokens', error);
     return null;
   }
 }
 
-function writeTokens(tokens) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
+function writeTokens(tokens, { persist } = {}) {
+  const nextPersist =
+    typeof persist === 'boolean' ? persist : shouldPersistTokens;
+  shouldPersistTokens = nextPersist;
+  const primary = nextPersist ? window.localStorage : window.sessionStorage;
+  const secondary = nextPersist ? window.sessionStorage : window.localStorage;
+  primary.setItem(STORAGE_KEY, JSON.stringify(tokens));
+  secondary.removeItem(STORAGE_KEY);
 }
 
 function removeTokens() {
   window.localStorage.removeItem(STORAGE_KEY);
+  window.sessionStorage.removeItem(STORAGE_KEY);
+  shouldPersistTokens = true;
 }
 
 async function parseJson(res) {

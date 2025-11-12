@@ -22,19 +22,8 @@ cp .env.example .env  # 후 환경변수 수정
 # (배포: CLIENT_ORIGIN=https://remind.ngrok.io, SERVER_PUBLIC_URL=https://remind-backend.ngrok.io 등)
 psql remind < migrations/001_init.sql   # 또는 docker exec 등으로 실행
 npm run dev
-```
+``
 
-PostgreSQL 컨테이너 예시:
-
-```bash
-docker run -d \
-  --name remind-postgres \
-  -e POSTGRES_USER=remind \
-  -e POSTGRES_PASSWORD=remind1234 \
-  -e POSTGRES_DB=remind \
-  -p 5432:5432 \
-  postgres:16
-```
 
 ### 주요 기능
 

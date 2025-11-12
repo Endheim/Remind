@@ -1,0 +1,6 @@
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS profile_complete BOOLEAN NOT NULL DEFAULT FALSE;
+
+UPDATE users
+SET profile_complete = TRUE
+WHERE profile_complete IS DISTINCT FROM TRUE;

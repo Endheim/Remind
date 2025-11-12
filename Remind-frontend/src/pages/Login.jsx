@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import authBackgrounds from '../constants/authBackgrounds';
 import '../styles/auth.css';
 import { authApi } from '../api';
+import { useGoogleSocialLogin } from '../hooks/useGoogleSocialLogin';
+import { buildOAuthRedirectUrl } from '../utils/oauth';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -17,13 +19,31 @@ export default function Login() {
   const [submitError, setSubmitError] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState(false);
+  const [socialLoadingProvider, setSocialLoadingProvider] = useState(null);
+  const {
+    error: googleError,
+    isAuthenticating: isGoogleAuthenticating,
+    startGoogleLogin,
+  } = useGoogleSocialLogin();
 
   useEffect(() => {
     if (authApi.isAuthenticated()) {
       navigate('/journals', { replace: true });
     }
   }, [navigate]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (socialLoadingProvider) {
+        setSocialLoadingProvider(null);
+        setStatusMessage('');
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [socialLoadingProvider]);
 
   const validateIdentifier = (value) => {
     const trimmedValue = value.trim();
@@ -104,7 +124,14 @@ export default function Login() {
     try {
       setIsSubmitting(true);
       setStatusMessage('로그인 중입니다...');
-      await authApi.login({ identifier, password }, { persist: rememberMe });
+      const loginResult = await authApi.login(
+        { identifier, password },
+        { persist: rememberMe }
+      );
+      if (handlePostAuthRouting(loginResult, 'email')) {
+        setStatusMessage('');
+        return;
+      }
       setStatusMessage('로그인 성공! 회고 화면으로 이동합니다.');
       navigate('/journals', { replace: true });
     } catch (error) {
@@ -121,34 +148,80 @@ export default function Login() {
   const heroImage = heroBackground?.src ?? authBackgrounds[0].src;
   const heroCredit = heroBackground?.credit ?? authBackgrounds[0].credit;
   const oauthRedirectUri = useMemo(
-    () => `${window.location.origin}/oauth/callback`,
-    []
+    () =>
+      buildOAuthRedirectUrl({
+        source: 'login',
+        persist: rememberMe ? 'persist' : 'session',
+      }),
+    [rememberMe]
   );
+  const isSocialLoading = Boolean(socialLoadingProvider);
 
   const identityInitial = useMemo(() => {
     const trimmed = identifier.trim();
     return trimmed ? trimmed[0].toUpperCase() : '?';
   }, [identifier]);
 
+  const redirectToProfileCompletion = (mode, email) => {
+    const params = new URLSearchParams({
+      step: '2',
+      mode,
+    });
+    if (email) {
+      params.set('email', email);
+    }
+    navigate(`/register?${params.toString()}`, { replace: true });
+  };
+
+  const handlePostAuthRouting = (authResult, mode) => {
+    if (authResult?.user && !authResult.user.profileComplete) {
+      redirectToProfileCompletion(mode, authResult.user.email);
+      return true;
+    }
+    return false;
+  };
+
   const handleSocialLogin = async (provider) => {
     if (provider === 'instagram') {
       setSubmitError('Instagram 로그인은 아직 지원되지 않습니다.');
       return;
     }
-    try {
-      setSubmitError('');
-      setStatusMessage('소셜 로그인 페이지로 이동합니다...');
-      setIsSocialLoading(true);
-      const { url } = await authApi.getOAuthUrl(provider, oauthRedirectUri);
-      window.location.href = url;
-    } catch (error) {
-      setIsSocialLoading(false);
-      setStatusMessage('');
-      const message =
-        error.status === 503
-          ? '소셜 로그인 설정이 완료되지 않았습니다. 이메일/아이디로 로그인해 주세요.'
-          : error.message || '소셜 로그인에 실패했습니다.';
-      setSubmitError(message);
+    if (provider === 'google') {
+      if (googleError) {
+        setSubmitError(googleError);
+        return;
+      }
+      try {
+        setSubmitError('');
+        setStatusMessage('Google 계정으로 이동합니다...');
+        setSocialLoadingProvider('google');
+        const result = await startGoogleLogin({ persist: rememberMe });
+        if (handlePostAuthRouting(result, 'google')) {
+          return;
+        }
+        navigate('/journals', { replace: true });
+      } catch (error) {
+        setSubmitError(error.message || 'Google 로그인에 실패했습니다.');
+      } finally {
+        setStatusMessage('');
+        setSocialLoadingProvider(null);
+      }
+      return;
+    }
+
+    if (provider === 'naver') {
+      try {
+        setSubmitError('');
+        setStatusMessage('');
+        setSocialLoadingProvider('naver');
+        const startUrl = authApi.buildOAuthStartUrl(provider, oauthRedirectUri);
+        window.location.href = startUrl;
+      } catch (error) {
+        setSocialLoadingProvider(null);
+        setStatusMessage('');
+        setSubmitError(error.message || '소셜 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      }
+      return;
     }
   };
 
@@ -280,10 +353,15 @@ export default function Login() {
                 className="social-button"
                 type="button"
                 onClick={() => handleSocialLogin('google')}
-                disabled={isSocialLoading}
+                disabled={
+                  (isSocialLoading && socialLoadingProvider === 'google') ||
+                  isGoogleAuthenticating
+                }
               >
                 <img src="/Google_icon.svg" alt="Google 계정으로 로그인 아이콘" />
-                <span>Google 계정으로 로그인</span>
+                <span>
+                  {socialLoadingProvider === 'google' ? 'Google 연동 중…' : 'Google 계정으로 로그인'}
+                </span>
               </button>
               <button
                 className="social-button"
@@ -292,7 +370,9 @@ export default function Login() {
                 disabled={isSocialLoading}
               >
                 <img src="/naver_icon.svg" alt="Naver 계정으로 로그인 아이콘" />
-                <span>Naver 계정으로 로그인</span>
+                <span>
+                  {socialLoadingProvider === 'naver' ? 'Naver 연동 중…' : 'Naver 계정으로 로그인'}
+                </span>
               </button>
               <button
                 className="social-button"

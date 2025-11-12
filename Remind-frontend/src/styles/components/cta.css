@@ -1,0 +1,10 @@
+.support-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid #d7dbec;
+  padding: 10px 20px;
+  font-weight: 600;
+  color: #4338ca;
+}

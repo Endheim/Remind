@@ -39,6 +39,9 @@ export default function Journals() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [pendingJournalId, setPendingJournalId] = useState(null);
 
   const loadSummary = useCallback(async () => {
     const { summary: serverSummary } = await emotionApi.summary();
@@ -48,13 +51,36 @@ export default function Journals() {
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [meResult, journalsResult, summaryResult] = await Promise.all([
-        authApi.me(),
+      const meResult = await authApi.me();
+      const currentUser = meResult.user;
+      setUser(currentUser);
+      if (!currentUser?.profileComplete) {
+        const params = new URLSearchParams({
+          step: '2',
+          mode: 'social',
+        });
+        if (currentUser?.email) {
+          params.set('email', currentUser.email);
+        }
+        navigate(`/register?${params.toString()}`, { replace: true });
+        return;
+      }
+      const [journalsResult, summaryResult] = await Promise.all([
         journalApi.list(),
         emotionApi.summary(),
       ]);
-      setUser(meResult.user);
-      setJournals(journalsResult.journals ?? []);
+      const nextJournals = journalsResult.journals ?? [];
+      setJournals(nextJournals);
+      if (nextJournals.length > 0) {
+        const latest = nextJournals[0];
+        setAiResult({
+          summary: latest.summary,
+          advice: latest.advice,
+          emotion: latest.emotion,
+        });
+      } else {
+        setAiResult(null);
+      }
       setSummary(summaryResult.summary);
       setStatusMessage('');
       setErrorMessage('');
@@ -62,6 +88,12 @@ export default function Journals() {
       if (error.status === 401) {
         authApi.logout();
         navigate('/login', { replace: true });
+      } else if (error.status === 403 && error.data?.code === 'PROFILE_INCOMPLETE') {
+        const params = new URLSearchParams({
+          step: '2',
+          mode: 'social',
+        });
+        navigate(`/register?${params.toString()}`, { replace: true });
       } else {
         setErrorMessage(error.message || '데이터를 불러오지 못했습니다.');
       }
@@ -93,6 +125,7 @@ export default function Journals() {
     const trimmed = content.trim();
     if (!trimmed) {
       setErrorMessage('감정을 1자 이상 입력해 주세요.');
+      setStatusMessage('');
       return;
     }
     setErrorMessage('');
@@ -114,9 +147,68 @@ export default function Journals() {
         console.error(summaryError);
       }
     } catch (error) {
+      if (error.status === 403 && error.data?.code === 'PROFILE_INCOMPLETE') {
+        const params = new URLSearchParams({
+          step: '2',
+          mode: 'social',
+        });
+        navigate(`/register?${params.toString()}`, { replace: true });
+        return;
+      }
       setErrorMessage(error.message || '회고 저장에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const beginEdit = (entry) => {
+    setEditingId(entry.id);
+    setEditingContent(entry.content);
+    setStatusMessage('');
+    setErrorMessage('');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingContent('');
+  };
+
+  const handleUpdateJournal = async () => {
+    if (!editingId) return;
+    const trimmed = editingContent.trim();
+    if (!trimmed) {
+      setErrorMessage('수정할 회고 내용을 1자 이상 입력해 주세요.');
+      return;
+    }
+    try {
+      setPendingJournalId(editingId);
+      await journalApi.update(editingId, trimmed);
+      setStatusMessage('회고가 수정되었습니다.');
+      setEditingId(null);
+      setEditingContent('');
+      await loadData();
+    } catch (error) {
+      setErrorMessage(error.message || '회고 수정에 실패했습니다.');
+    } finally {
+      setPendingJournalId(null);
+    }
+  };
+
+  const handleDeleteJournal = async (journalId) => {
+    const confirmed = window.confirm('해당 회고를 삭제하시겠어요? 이 작업은 되돌릴 수 없습니다.');
+    if (!confirmed) return;
+    try {
+      setPendingJournalId(journalId);
+      await journalApi.remove(journalId);
+      setStatusMessage('회고가 삭제되었습니다.');
+      if (editingId === journalId) {
+        cancelEdit();
+      }
+      await loadData();
+    } catch (error) {
+      setErrorMessage(error.message || '회고 삭제에 실패했습니다.');
+    } finally {
+      setPendingJournalId(null);
     }
   };
 
@@ -249,7 +341,17 @@ export default function Journals() {
                 <div>
                   <p className="muted-text">{formatDate(entry.createdAt)}</p>
                   <h4>{emotionLabel[entry.emotion] || entry.emotion} · AI 감정 분석</h4>
-                  <p>{entry.content}</p>
+                  {editingId === entry.id ? (
+                    <textarea
+                      className="journal-edit-textarea"
+                      value={editingContent}
+                      maxLength={500}
+                      onChange={(event) => setEditingContent(event.target.value)}
+                      aria-label="회고 내용 수정"
+                    />
+                  ) : (
+                    <p>{entry.content}</p>
+                  )}
                 </div>
                 <span className="emotion-chip" data-emotion={entry.emotion}>
                   {emotionLabel[entry.emotion] || entry.emotion}
@@ -265,18 +367,46 @@ export default function Journals() {
                   <p>{entry.advice}</p>
                 </div>
               </div>
+              <div className="journal-entry-actions">
+                {editingId === entry.id ? (
+                  <>
+                    <button className="ghost-btn small" type="button" onClick={cancelEdit}>
+                      취소
+                    </button>
+                    <button
+                      className="primary small"
+                      type="button"
+                      onClick={handleUpdateJournal}
+                      disabled={pendingJournalId === entry.id}
+                    >
+                      {pendingJournalId === entry.id ? '저장 중…' : '변경 사항 저장'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="ghost-btn small"
+                      type="button"
+                      onClick={() => beginEdit(entry)}
+                    >
+                      수정
+                    </button>
+                    <button
+                      className="ghost-btn small danger"
+                      type="button"
+                      onClick={() => handleDeleteJournal(entry.id)}
+                      disabled={pendingJournalId === entry.id}
+                    >
+                      {pendingJournalId === entry.id ? '삭제 중…' : '삭제'}
+                    </button>
+                  </>
+                )}
+              </div>
             </li>
           ))}
         </ul>
       )}
 
-      <section className="closing">
-        <p>오늘의 감정을 기록하고, 내일의 마음을 준비해보세요.</p>
-        <h2>Re:Mind가 당신의 감정 여정을 함께합니다.</h2>
-        <Link className="primary" to="/login">
-          베타 참여하기
-        </Link>
-      </section>
     </div>
   );
 }
