@@ -1,0 +1,64 @@
+body {
+  margin: 0;
+  font-family: 'Pretendard', 'Pretendard Variable', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+  background-color: #f6f7fc;
+  color: #111322;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: 'Pretendard', 'Pretendard Variable', SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+.primary,
+.secondary,
+.ghost-btn,
+.login-btn,
+.support-link {
+  transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+button:hover,
+.primary:hover,
+.secondary:hover,
+.ghost-btn:hover,
+.login-btn:hover,
+.support-link:hover {
+  box-shadow: 0 8px 18px rgba(17, 17, 34, 0.08);
+  color: inherit;
+}
+ a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #6c5ce7;
+}
+
+.text-button,
+.support-link {
+  transition: none;
+  box-shadow: none;
+}
+
+.text-button:hover {
+  box-shadow: none;
+  color: #7c3aed;
+}
+
+.support-link:hover,
+a.support-link:hover {
+  box-shadow: none;
+  color: currentColor;
+}
