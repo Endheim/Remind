@@ -62,6 +62,12 @@ export const authApi = {
       body: payload,
     });
   },
+  checkEmailAvailability(email) {
+    const params = new URLSearchParams({ value: email });
+    return apiFetch(`/auth/email/check?${params.toString()}`, {
+      auth: false,
+    });
+  },
   checkNicknameAvailability(nickname) {
     const params = new URLSearchParams({ value: nickname });
     return apiFetch(`/auth/nickname/check?${params.toString()}`, {

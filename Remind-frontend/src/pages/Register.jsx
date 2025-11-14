@@ -36,6 +36,8 @@ export default function Register() {
   const [userId, setUserId] = useState('');
   const [userIdError, setUserIdError] = useState('');
   const [isUserIdTouched, setIsUserIdTouched] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(isSocialFlow);
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -102,6 +104,51 @@ export default function Register() {
     };
   }, [isSocialLoading]);
 
+  useEffect(() => {
+    if (isSocialFlow || step !== 2 || isEmailVerified) {
+      return;
+    }
+    if (!registerEmail.trim()) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const checkEmail = async () => {
+      try {
+        setIsCheckingEmail(true);
+        const result = await authApi.checkEmailAvailability(registerEmail.trim());
+        if (!result.available && !isCancelled) {
+          setIsRegisterEmailTouched(true);
+          setRegisterEmailError('이미 등록된 이메일 입니다.');
+          setIsEmailVerified(false);
+          setStep(1);
+        } else if (!isCancelled) {
+          setIsEmailVerified(true);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setIsRegisterEmailTouched(true);
+          setRegisterEmailError(
+            error.message || '이메일 주소 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.'
+          );
+          setIsEmailVerified(false);
+          setStep(1);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsCheckingEmail(false);
+        }
+      }
+    };
+
+    checkEmail();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isSocialFlow, step, registerEmail, isEmailVerified]);
+
   const validateUserId = (value) => {
     const trimmedValue = value.trim();
     if (!trimmedValue) {
@@ -145,7 +192,7 @@ export default function Register() {
     return '';
   };
 
-  const handleStepOneSubmit = (event) => {
+  const handleStepOneSubmit = async (event) => {
     event.preventDefault();
     const emailError = validateRegisterEmail(registerEmail);
     const passwordError = validateRegisterPassword(registerPassword);
@@ -156,6 +203,26 @@ export default function Register() {
     if (emailError || passwordError) {
       return;
     }
+    setSubmitError('');
+    try {
+      setIsCheckingEmail(true);
+      const result = await authApi.checkEmailAvailability(registerEmail.trim());
+      if (!result.available) {
+        setRegisterEmailError('이미 등록된 이메일 입니다.');
+        setIsEmailVerified(false);
+        return;
+      }
+    } catch (error) {
+      setRegisterEmailError(
+        error.message || '이메일 주소 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.'
+      );
+      setIsEmailVerified(false);
+      return;
+    } finally {
+      setIsCheckingEmail(false);
+    }
+    setRegisterEmailError('');
+    setIsEmailVerified(true);
     setStep(2);
   };
 
@@ -169,6 +236,7 @@ export default function Register() {
   const handleRegisterEmailChange = (event) => {
     const { value } = event.target;
     setRegisterEmail(value);
+    setIsEmailVerified(false);
     if (isRegisterEmailTouched) {
       setRegisterEmailError(validateRegisterEmail(value));
     }
@@ -234,8 +302,17 @@ export default function Register() {
       }
       navigate('/journals', { replace: true });
     } catch (error) {
-      setSubmitError(error.message || '회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-      setStatusMessage('');
+      if (error.status === 409) {
+        setStatusMessage('');
+        setSubmitError('');
+        setIsEmailVerified(false);
+        setIsRegisterEmailTouched(true);
+        setRegisterEmailError('이미 등록된 이메일 입니다.');
+        setStep(1);
+      } else {
+        setSubmitError(error.message || '회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        setStatusMessage('');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -441,8 +518,8 @@ export default function Register() {
                 </p>
               )}
 
-              <button type="submit" className="primary full">
-                계속
+              <button type="submit" className="primary full" disabled={isCheckingEmail}>
+                {isCheckingEmail ? '확인 중…' : '계속'}
               </button>
             </form>
           </>

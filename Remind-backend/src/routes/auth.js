@@ -64,8 +64,27 @@ router.get('/nickname/check', async (req, res) => {
   if (value.length < 2 || value.length > 20) {
     throw createError(400, '닉네임은 2~20자로 입력해 주세요.');
   }
-  // 닉네임 중복을 허용하므로 항상 사용 가능으로 응답
-  res.json({ available: true });
+  const existing = await userService.findByNickname(value);
+  res.json({ available: !existing });
+});
+
+router.get('/email/check', async (req, res) => {
+  const value = (req.query.value || '').trim();
+  if (!value) {
+    throw createError(400, '이메일 주소를 입력해 주세요.');
+  }
+  if (value.length < 8 || value.length > 64) {
+    throw createError(
+      400,
+      '이메일 주소 길이는 8자에서 64자 사이여야 합니다.'
+    );
+  }
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(value)) {
+    throw createError(400, '유효한 이메일 주소를 입력해 주세요.');
+  }
+  const existing = await userService.findByEmail(value);
+  res.json({ available: !existing });
 });
 
 module.exports = router;

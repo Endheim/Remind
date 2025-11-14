@@ -34,7 +34,7 @@ router.post('/', validate(createJournalSchema), async (req, res) => {
   const {
     body: { content },
   } = req.validated;
-  const analysis = aiService.analyzeJournal(content);
+  const analysis = await aiService.analyzeJournal(content);
   const journal = await journalService.createJournal(req.user.sub, {
     content,
     ...analysis,
@@ -47,7 +47,7 @@ router.patch('/:id', validate(updateJournalSchema), async (req, res) => {
     params: { id },
     body: { content },
   } = req.validated;
-  const analysis = aiService.analyzeJournal(content);
+  const analysis = await aiService.analyzeJournal(content);
   const journal = await journalService.updateJournal(req.user.sub, id, {
     content,
     ...analysis,

@@ -17,7 +17,7 @@ router.post(
     const {
       body: { content },
     } = req.validated;
-    const result = aiService.analyzeJournal(content);
+    const result = await aiService.analyzeJournal(content);
     res.json(result);
   }
 );
@@ -26,7 +26,7 @@ router.post('/coach', validate(contentSchema), async (req, res) => {
   const {
     body: { content },
   } = req.validated;
-  const result = aiService.coach(content);
+  const result = await aiService.coach(content);
   res.json(result);
 });
 

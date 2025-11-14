@@ -7,7 +7,7 @@ const navLinks = [
   { label: '소개', href: '#about' },
   { label: '제품', href: '#product' },
   { label: '사용 흐름', href: '#flow' },
-  { label: '활용 사례', href: '#usecases' },
+  { label: '활용 예시', href: '#usecases' },
   { label: '문의', href: '#contact' },
 ];
 
@@ -41,45 +41,11 @@ const aboutHighlights = [
   },
   {
     title: 'Team Ndheim',
-    body: '팀원은 두 명입니다. 한 명은 기획부터 프론트·백엔드 개발까지 맡고, 다른 한 명은 디자인·PM·QA를 담당합니다. 2025 해커톤에서 출발해 지금까지 확장해 왔습니다.',
+    body: '팀원은 두 명입니다. 한 명은 기획부터 프론트·백엔드 개발까지 맡고, 다른 한 명은 디자인·PM·QA를 담당합니다. 2025 해커톤에서 출발했습니다.',
   },
   {
     title: '브랜드 포지션',
     body: '“감정을 솔직하게 기록하고 회복을 돕는 파트너”라는 톤으로 텍스트와 UI를 제작합니다.',
-  },
-];
-
-const flowSteps = [
-  {
-    title: 'Kick-off',
-    description: '요구 사항과 팀의 목적을 정의하며 도입 범위를 확정합니다.',
-  },
-  {
-    title: '사용자 초대',
-    description: 'Google 또는 이메일 계정으로 초대해 첫 회고를 기록하게 합니다.',
-  },
-  {
-    title: 'AI 분석 & 피드백',
-    description: '감정 요약·조언·그래프가 카드로 생성되어 루틴을 제안합니다.',
-  },
-  {
-    title: '리포트 공유',
-    description: '주간 리포트와 CSV 익스포트로 팀 인사이트를 공유합니다.',
-  },
-];
-
-const productNotes = [
-  {
-    title: '기록 경험',
-    body: '기록 → 분석 → 피드백을 한 화면에서 제공해 3클릭 안에 회고가 끝납니다.',
-  },
-  {
-    title: '데이터 보안',
-    body: '개인 회고는 본인만 열람하고, 공유 리포트에는 민감 데이터를 제거합니다.',
-  },
-  {
-    title: '운영 체계',
-    body: 'QA/실서버 분리·ngrok·슬랙 봇으로 배포와 접근 권한을 관리합니다.',
   },
 ];
 
@@ -101,7 +67,7 @@ const useCaseCards = [
   },
   {
     title: 'Team Ndheim',
-    copy: '두 명의 팀이 운영합니다. 한 명은 기획과 개발 전 과정을, 다른 한 명은 디자인·PM·QA를 담당하며, 해커톤에서 검증한 프로토타입을 계속 발전시키고 있습니다.',
+    copy: '두 명의 팀이 운영합니다. 한 명은 기획과 개발 전 과정을, 다른 한 명은 디자인·PM·QA를 담당하며, 해커톤에서 검증한 프로토타입을 계속 발전시킵니다.',
     bullets: ['GitHub: github.com/Endheim'],
   },
 ];
@@ -230,27 +196,35 @@ export default function Landing() {
             <p className="eyebrow">사용 흐름</p>
             <h2>Re:Mind 사용 방법</h2>
             <ol className="flow-steps">
-              {flowSteps.map((step, index) => (
-                <li key={step.title} className="flow-step">
-                  <span className="step-index">{index + 1}</span>
-                  <div className="step-copy">
-                    <strong>{step.title}</strong>
-                    <p>{step.description}</p>
-                  </div>
-                </li>
-              ))}
+              <li className="flow-step">
+                <span className="step-index">1</span>
+                <div className="step-copy">
+                  <strong>Kick-off</strong>
+                  <p>요구 사항과 팀의 목적을 정의하며 도입 범위를 확정합니다.</p>
+                </div>
+              </li>
+              <li className="flow-step">
+                <span className="step-index">2</span>
+                <div className="step-copy">
+                  <strong>사용자 초대</strong>
+                  <p>Google 또는 이메일 계정으로 초대해 첫 회고를 기록하게 합니다.</p>
+                </div>
+              </li>
+              <li className="flow-step">
+                <span className="step-index">3</span>
+                <div className="step-copy">
+                  <strong>AI 분석 &amp; 피드백</strong>
+                  <p>감정 요약·조언·그래프가 카드로 생성되어 루틴을 제안합니다.</p>
+                </div>
+              </li>
+              <li className="flow-step">
+                <span className="step-index">4</span>
+                <div className="step-copy">
+                  <strong>리포트 공유</strong>
+                  <p>주간 리포트와 CSV 익스포트로 팀 인사이트를 공유합니다.</p>
+                </div>
+              </li>
             </ol>
-          </div>
-          <div className="card metrics">
-            <h3>운영 철학</h3>
-            <div className="nfr-list">
-              {productNotes.map((item) => (
-                <article key={item.title}>
-                  <strong>{item.title}</strong>
-                  <p>{item.body}</p>
-                </article>
-              ))}
-            </div>
           </div>
         </section>
 

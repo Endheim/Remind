@@ -20,26 +20,63 @@ const LABEL_ALIASES = {
 
 const ANALYZE_SYSTEM_PROMPT = [
   '당신은 감정 분석과 심리 피드백을 전문으로 수행하는 AI 멘탈 코치입니다.',
-  '지침:',
-  '1. 사용자의 글을 읽고 감정 전반 성향을 판별하세요: 긍정, 중립, 부정, 혼합 중 하나.',
-  '2. 주요 감정 단어와 원인을 2~5개 추출하세요.',
-  '3. 감정 강도(confidence)를 0.0~1.0 범위에서 판단하세요.',
-  '4. 하루 감정을 20자 이하의 자연스러운 한국어 문장으로 요약하세요.',
-  '5. 위로·격려·조언을 2~3문장(필요 시 최대 8문장)으로 제공하세요. 톤은 따뜻하고 공감적으로 유지하세요.',
-  '규칙:',
-  '- 긍정과 부정이 동시에 뚜렷하면 label은 "혼합".',
-  '- 감정이 불명확하면 label="중립", confidence≤0.3.',
-  '- summary에는 특수문자나 이모지를 사용하지 마세요.',
-  '- feedback은 부드럽고 따뜻하게 작성하세요.',
-  '- 자해, 폭력, 혐오 표현은 완곡하게 재구성하세요.',
-  '- 출력은 아래 JSON 형식으로만 답하세요. JSON 외 텍스트나 코드블록을 포함하지 마세요.',
+  '당신의 분석은 Re:Mind 감정 회고 시스템에 저장되어 사용자의 장기적 감정 변화를 파악하는 데 활용됩니다.',
+  '아래 모든 규칙을 철저히 준수하고, 출력은 반드시 JSON 형식으로만 생성하세요.',
+  '',
+  '[1] 역할 및 분석 목표',
+  '- 사용자의 문장을 기반으로 감정의 전반적 상태를 정밀하게 분석하세요.',
+  '- 감정 라벨 분류, 감정 강도 산출, 주요 감정 단어 추출, 하루 감정 요약, 따뜻한 심리 피드백을 제공하세요.',
+  '- 감정을 과도하게 단정하지 말고, 진단적 표현은 사용하지 마세요.',
+  '- 심각한 위험 표현(자책, 우울감 심화, 자해 암시 등) 감지 시 피드백 길이를 4~8문장으로 확장하되 부드럽게 지지하세요.',
+  '',
+  '[2] 감정 라벨 규칙',
+  '- 라벨은 긍정, 중립, 부정, 혼합 중 하나입니다.',
+  '- 긍정: 긍정적 언어, 감사, 성취, 평온함, 만족감이 드러나는 경우.',
+  '- 중립: 감정 기복이 거의 없거나 표현이 모호한 경우.',
+  '- 부정: 스트레스, 불안, 분노, 피로, 자책, 슬픔 등 부정적 감정이 명확할 때.',
+  '- 혼합: 긍정과 부정이 동시에 충분히 드러나는 경우에만 사용하세요.',
+  '- 감정이 불확실하거나 감정 단어가 거의 없으면 반드시 중립으로 라벨링하고 confidence는 0.3 이하로 설정하세요.',
+  '',
+  '[3] confidence 산출 규칙 (0.0~1.0)',
+  '- 감정 신호가 명확하고 반복되며 강도가 강하면 0.8~1.0.',
+  '- 감정 신호가 존재하지만 다소 약하면 0.5~0.79.',
+  '- 감정 신호가 거의 없거나 모호하면 0.0~0.3.',
+  '- confidence는 감정 분석 확신도로, 선택한 라벨과 일관되게 설정하세요.',
+  '',
+  '[4] keywords 규칙',
+  '- 반드시 2~5개를 추출하세요.',
+  '- 감정 단어나 감정의 원인을 드러내는 핵심 단어만 사용하세요.',
+  '- 욕설이나 과격한 표현이 있으면 순화하여 기록합니다.',
+  '',
+  '[5] summary 규칙',
+  '- 20자 이내의 자연스러운 한국어 문장으로 작성하세요.',
+  '- 하루 감정의 본질을 명확하게 요약하세요.',
+  '- 이모지나 특수문자를 사용하지 마세요.',
+  '',
+'[6] feedback 규칙',
+'- 기본은 1~2문장으로 간단하고 짧게 작성하며, 각 문장은 64자를 넘기지 않습니다.',
+'- 감정이 매우 부정적이거나 위험 신호(자살, 극단적 우울, 자해 암시 등)가 감지되면 2~6문장으로 확장하고 따뜻한 톤을 유지하며, 반드시 전문 기관 및 도움을 권유하는 안전 문구를 포함하세요.',
+'- 모든 상황에서 가르치거나 단정 짓지 말고, 이해와 공감을 기반으로 조언하세요.',
+'- 상담, 치료, 진단처럼 들리는 표현은 절대 사용하지 마세요.',
+  '',
+  '[7] JSON 출력 형식 (절대 변경 금지)',
   '{',
-  '  "label": "긍정|중립|부정|혼합",',
+  '  "label": "긍정" | "중립" | "부정" | "혼합",',
   '  "confidence": 0.0,',
   '  "keywords": ["감정", "주요 단어"],',
-  '  "summary": "20자 이하 자연스러운 한국어 문장",',
-  '  "feedback": "위로·격려·조언 2~3문장 (필요 시 최대 8문장)"',
+  '  "summary": "20자 이내 감정 요약",',
+  '  "feedback": "2~3문장 또는 필요 시 최대 8문장의 위로·격려·조언"',
   '}',
+  '',
+  '[8] 보안 & 안정성 규칙',
+  '- JSON 외 텍스트를 절대 포함하지 마세요.',
+  '- 따옴표, 쉼표, 괄호를 빠뜨리지 마세요.',
+  '- 키 이름을 변경하거나 추가 key/value를 만들지 마세요.',
+  '- 위험 표현은 완곡하게 재구성하세요.',
+  '',
+  '[9] 전반적 원칙',
+  '- 감정을 판단하지 말고 이해와 정리에 집중하세요.',
+  '- 과도한 설교를 피하고, Re:Mind의 따뜻한 감성에 맞추어 답하세요.',
 ].join('\n');
 
 const clamp = (value, min, max) => {
@@ -79,6 +116,69 @@ const stripCodeFence = (raw) => {
     return trimmed.replace(/^```[a-zA-Z]*\s*/i, '').replace(/```$/i, '').trim();
   }
   return trimmed;
+};
+
+const extractMessageContent = (message) => {
+  if (!message) return null;
+  const { content, tool_calls: toolCalls, parsed, refusal } = message;
+
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    const joined = content
+      .map((part) => {
+        if (!part) return '';
+        if (typeof part === 'string') return part;
+        if (typeof part.text === 'string') return part.text;
+        if (typeof part?.data === 'string') return part.data;
+        if (typeof part?.output_text === 'string') return part.output_text;
+        if (typeof part?.content === 'string') return part.content;
+        if (typeof part?.arguments === 'string') return part.arguments;
+        if (part?.json && typeof part.json === 'object') {
+          try {
+            return JSON.stringify(part.json);
+          } catch (error) {
+            return '';
+          }
+        }
+        if (part?.parsed && typeof part.parsed === 'object') {
+          try {
+            return JSON.stringify(part.parsed);
+          } catch (error) {
+            return '';
+          }
+        }
+        return '';
+      })
+      .join('')
+      .trim();
+    if (joined) {
+      return joined;
+    }
+  }
+
+  if (toolCalls && toolCalls.length > 0) {
+    const [firstCall] = toolCalls;
+    if (firstCall?.function?.arguments) {
+      return firstCall.function.arguments;
+    }
+  }
+
+  if (parsed && typeof parsed === 'object') {
+    try {
+      return JSON.stringify(parsed);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  if (refusal?.reason) {
+    return refusal.reason;
+  }
+
+  return null;
 };
 
 const analyzeEmotionHeuristic = (content) => {
@@ -156,13 +256,79 @@ const analyzeWithOpenAi = async (content) => {
       },
     ],
     responseFormat: 'json_object',
-    temperature: 0.1,
-    maxTokens: 600,
+    temperature: 1,
+    maxTokens: 2500,
   });
 
-  const messageContent = response.choices?.[0]?.message?.content;
+  const [primaryChoice] = response.choices ?? [];
+  let messageContent = extractMessageContent(primaryChoice?.message);
+
   if (!messageContent) {
-    throw new Error('OpenAI 응답에서 메시지를 찾지 못했습니다.');
+    if (Array.isArray(primaryChoice?.content)) {
+      messageContent = primaryChoice.content
+        .map((part) => {
+          if (typeof part === 'string') return part;
+          if (typeof part?.text === 'string') return part.text;
+          if (typeof part?.output_text === 'string') return part.output_text;
+          if (typeof part?.arguments === 'string') return part.arguments;
+          if (part?.json && typeof part.json === 'object') {
+            try {
+              return JSON.stringify(part.json);
+            } catch (error) {
+              return '';
+            }
+          }
+          if (part?.parsed && typeof part.parsed === 'object') {
+            try {
+              return JSON.stringify(part.parsed);
+            } catch (error) {
+              return '';
+            }
+          }
+          return '';
+        })
+        .join('')
+        .trim();
+    }
+
+    if (!messageContent) {
+      if (Array.isArray(primaryChoice?.output_text)) {
+        messageContent = primaryChoice.output_text.join('\n').trim();
+      } else if (typeof primaryChoice?.output_text === 'string') {
+        messageContent = primaryChoice.output_text.trim();
+      }
+    }
+
+    if (!messageContent) {
+      if (Array.isArray(response.output_text)) {
+        messageContent = response.output_text.join('\n').trim();
+      } else if (typeof response.output_text === 'string') {
+        messageContent = response.output_text.trim();
+      }
+    }
+  }
+
+  if (!messageContent) {
+    const diagnostic = JSON.stringify(
+      {
+        responseId: response.id,
+        choicesLength: response.choices?.length ?? 0,
+        finishReason: primaryChoice?.finish_reason,
+        hasOutputText:
+          Boolean(primaryChoice?.output_text) || Boolean(response.output_text),
+      },
+      null,
+      2
+    );
+    try {
+      console.error(
+        '[OpenAI] Missing message content. Raw response snapshot:',
+        JSON.stringify(response, null, 2)
+      );
+    } catch (error) {
+      console.error('[OpenAI] Missing message content. Raw response unavailable.');
+    }
+    throw new Error(`OpenAI 응답에서 메시지를 찾지 못했습니다. details=${diagnostic}`);
   }
 
   const cleaned = stripCodeFence(messageContent);

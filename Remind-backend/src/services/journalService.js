@@ -1,5 +1,6 @@
 const db = require('../db/pool');
 const { createError } = require('../utils/errors');
+const { createModerationLog } = require('./moderationLogService');
 
 const JOURNAL_COLUMNS = `
   id, user_id, content, emotion, emotion_score, summary,
@@ -48,7 +49,25 @@ const createJournal = async (userId, data) => {
     values
   );
 
-  return mapJournal(rows[0]);
+  const journal = mapJournal(rows[0]);
+
+  try {
+    await createModerationLog({
+      targetType: 'journal',
+      targetId: journal.id,
+      action: data.moderationVerdict,
+      confidence: data.moderationConfidence,
+      metadata: {
+        event: 'create',
+        emotion: data.emotion,
+        emotionScore: data.emotionScore,
+      },
+    });
+  } catch (error) {
+    console.warn('Failed to record moderation log for journal create', error);
+  }
+
+  return journal;
 };
 
 const listJournals = async (userId, { limit = 20, offset = 0 } = {}) => {
@@ -118,6 +137,23 @@ const updateJournal = async (userId, journalId, data) => {
   );
 
   const journal = mapJournal(rows[0]);
+
+  try {
+    await createModerationLog({
+      targetType: 'journal',
+      targetId: journal.id,
+      action: data.moderationVerdict,
+      confidence: data.moderationConfidence,
+      metadata: {
+        event: 'update',
+        emotion: data.emotion,
+        emotionScore: data.emotionScore,
+      },
+    });
+  } catch (error) {
+    console.warn('Failed to record moderation log for journal update', error);
+  }
+
   return journal;
 };
 
