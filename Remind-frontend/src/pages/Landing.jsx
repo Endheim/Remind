@@ -4,100 +4,105 @@ import authBackgrounds from '../constants/authBackgrounds';
 import '../styles/landing.css';
 
 const navLinks = [
-  { label: '기능', href: '#features' },
-  { label: '사용방법', href: '#flow' },
   { label: '소개', href: '#about' },
+  { label: '제품', href: '#product' },
+  { label: '사용 흐름', href: '#flow' },
+  { label: '활용 사례', href: '#usecases' },
   { label: '문의', href: '#contact' },
 ];
 
-const featureCards = [
+const productCards = [
   {
-    badge: '핵심',
-    title: 'AI 감정 회고',
-    description: '매일 1문장 기록만으로 감정 패턴과 감정 점수를 즉시 확인합니다.',
+    badge: '기록',
+    title: '감정 다이어리',
+    description: '하루 1분 기록만으로 감정 그래프와 키워드를 생성합니다.',
   },
   {
     badge: '코칭',
-    title: '성장 피드백',
-    description: '스트레스·회복 단어 사용량 변화를 분석해 마음을 다듬는 안내 문장을 전합니다.',
+    title: 'GPT 피드백',
+    description: 'OpenAI GPT API가 감정 요약과 맞춤 피드백을 제공해 회복 루틴을 제안합니다.',
   },
   {
     badge: '리포트',
-    title: '마인드 리포트',
-    description: '주간/월간 리포트로 감정 변화, 키워드 클라우드, 루틴을 제안합니다.',
+    title: '인사이트 허브',
+    description: '주간 리포트, 루틴 제안, 감정 데이터 익스포트 기능을 제공합니다.',
   },
   {
-    badge: '안전',
-    title: '유해성 필터링',
-    description: '욕설·혐오 표현을 GPT 필터로 사전 차단하여 커뮤니티를 보호합니다.',
+    badge: '가드',
+    title: '모더레이션',
+    description: '욕설·자해 키워드를 필터링하고 관리 로그를 남겨 안전한 경험을 만듭니다.',
   },
 ];
 
-const impactList = [
+const aboutHighlights = [
   {
-    title: '심리적 안정감',
-    body: '일상 감정 정리와 AI 피드백으로 자기이해력 향상',
+    title: 'Re:Mind 소개',
+    body: 'AI 감정 회고 플랫폼으로, 사용자 스스로 감정을 기록·이해·루틴화하도록 설계했습니다.',
   },
   {
-    title: '데이터 기반 성장',
-    body: '감정 그래프, 키워드 클라우드, 루틴 추천 제공',
+    title: 'Team Ndheim',
+    body: '팀원은 두 명입니다. 한 명은 기획부터 프론트·백엔드 개발까지 맡고, 다른 한 명은 디자인·PM·QA를 담당합니다. 2025 해커톤에서 출발해 지금까지 확장해 왔습니다.',
   },
   {
-    title: '사회적 가치',
-    body: '고비용 상담의 대안이 되는 정서 관리 도구',
+    title: '브랜드 포지션',
+    body: '“감정을 솔직하게 기록하고 회복을 돕는 파트너”라는 톤으로 텍스트와 UI를 제작합니다.',
   },
 ];
 
 const flowSteps = [
-  'Google OAuth 또는 이메일로 로그인합니다.',
-  '오늘의 감정을 1~2문장으로 기록하고 “AI 분석”을 누릅니다.',
-  '감정 레이블·점수·마음 정리 메시지와 리포트 링크를 확인합니다.',
-  '감정 그래프와 주간 리포트를 열람하며 성장 루틴을 적용합니다.',
-];
-
-const nfrItems = [
   {
-    title: 'P95 API 응답 800ms 이하',
-    body: '핵심 API는 캐싱·비동기 큐로 P95 응답을 0.8초 안으로 유지해 생생한 회고 경험을 보장합니다.',
+    title: 'Kick-off',
+    description: '요구 사항과 팀의 목적을 정의하며 도입 범위를 확정합니다.',
   },
   {
-    title: 'AI 응답 평균 1.5초',
-    body: 'KoBERT 전처리 + GPT 프롬프트 최적화로 감정 분석과 마음 정리 문장을 1.5초 내로 전달합니다.',
+    title: '사용자 초대',
+    description: 'Google 또는 이메일 계정으로 초대해 첫 회고를 기록하게 합니다.',
   },
   {
-    title: '가용성 99.5% · 일별 백업',
-    body: '이중 AZ 배포와 자동 스냅샷 백업으로 데이터 손실과 다운타임을 최소화합니다.',
+    title: 'AI 분석 & 피드백',
+    description: '감정 요약·조언·그래프가 카드로 생성되어 루틴을 제안합니다.',
   },
   {
-    title: 'JWT + OAuth2 + bcrypt',
-    body: 'Access/Refresh 토큰, Google OAuth2, bcrypt 암호화로 인증부터 저장까지 안전하게 보호합니다.',
+    title: '리포트 공유',
+    description: '주간 리포트와 CSV 익스포트로 팀 인사이트를 공유합니다.',
   },
 ];
 
-const serviceModules = [
+const productNotes = [
   {
-    title: '기록 & 인증',
-    copy: 'OAuth2 · JWT · 이메일 인증으로 사용자 여정을 안전하게 시작합니다.',
-    bullets: [
-      '이메일/Google 가입, Access·Refresh 토큰 발급',
-      '회고 작성·조회·삭제',
-      '24시간 수정 제한 정책',
-    ],
+    title: '기록 경험',
+    body: '기록 → 분석 → 피드백을 한 화면에서 제공해 3클릭 안에 회고가 끝납니다.',
   },
   {
-    title: 'AI 분석 & 마음 정리',
-    copy: 'KoBERT + GPT 조합으로 감정 분류와 마음을 다듬는 안내를 제공합니다.',
-    bullets: ['감정 라벨/점수 산출', '요약 + 마음 정리 문장 생성', '스트레스 패턴 알림'],
+    title: '데이터 보안',
+    body: '개인 회고는 본인만 열람하고, 공유 리포트에는 민감 데이터를 제거합니다.',
   },
   {
-    title: '리포트 & 통계',
-    copy: '주간 리포트와 감정 그래프를 시각화해 성장 루틴을 안내합니다.',
-    bullets: ['최근 7일 감정 비율 차트', '주간/월간 PDF 리포트', '키워드 클라우드와 루틴 추천'],
+    title: '운영 체계',
+    body: 'QA/실서버 분리·ngrok·슬랙 봇으로 배포와 접근 권한을 관리합니다.',
+  },
+];
+
+const useCaseCards = [
+  {
+    title: '슬랙/디스코드 커뮤니티',
+    copy: '커뮤니티 멤버의 감정 상태를 주간 리포트로 공유해 온보딩과 케어 세션에 활용합니다.',
+    bullets: ['데일리 회고 챌린지', '모더레이터용 정서 모니터링', '익명 리포트 공유'],
   },
   {
-    title: '안전 & 운영',
-    copy: '커뮤니티 품질을 지키는 필터와 관리자 도구를 제공합니다.',
-    bullets: ['욕설·혐오 감지 필터', '신고 큐 및 검토 로그', '금칙어/임계값 설정'],
+    title: '조직 내 멤버 케어',
+    copy: 'HR/리더가 팀원의 감정 흐름을 익명으로 확인하고, 1:1 케어 세션을 설계할 수 있습니다.',
+    bullets: ['Google SSO 연동', '감정 그래프 API', 'PDF 리포트 내보내기'],
+  },
+  {
+    title: '멘탈 케어 스타트업',
+    copy: '상담이 어려운 사용자에게 저비용 정서 케어 루틴을 제공하는 SaaS 형태로 라이선스합니다.',
+    bullets: ['브랜드 커스터마이징', 'Webhook 연동', '온보딩 컨설팅'],
+  },
+  {
+    title: 'Team Ndheim',
+    copy: '두 명의 팀이 운영합니다. 한 명은 기획과 개발 전 과정을, 다른 한 명은 디자인·PM·QA를 담당하며, 해커톤에서 검증한 프로토타입을 계속 발전시키고 있습니다.',
+    bullets: ['GitHub: github.com/Endheim'],
   },
 ];
 
@@ -118,7 +123,14 @@ export default function Landing() {
         <div className="overlay" aria-hidden="true" />
         <nav className="nav">
           <Link className="logo" to="/" onClick={closeMenu}>
-            <img src="/logo_white.svg" alt="Re:Mind 로고" />
+            <img
+              src="/logo_white.svg"
+              alt="Re:Mind 로고"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = '/logo_team.svg';
+              }}
+            />
             <span>Re:Mind</span>
           </Link>
           <button
@@ -182,8 +194,29 @@ export default function Landing() {
       </header>
 
       <main>
-        <section id="features" className="feature-section">
-          {featureCards.map((card) => (
+        <section id="about" className="impact">
+          <article className="impact-intro">
+            <h2>Re:Mind는 어떤 서비스인가요?</h2>
+            <p>
+              감정을 기록하고 AI 피드백으로 성장 루틴을 설계하는 정서 케어 SaaS입니다. 개인 이용자는 자기이해와
+              회복탄력성을 높이고, 팀/커뮤니티는 구성원 케어 데이터를 한눈에 확인할 수 있습니다.
+            </p>
+          </article>
+          <div className="impact-cards">
+            {aboutHighlights.map((item, index) => (
+              <article key={item.title} className="impact-card">
+                <span className="card-index">0{index + 1}</span>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="product" className="feature-section">
+          {productCards.map((card) => (
             <article key={card.title} className="feature-card">
               <span className="badge">{card.badge}</span>
               <h3>{card.title}</h3>
@@ -192,43 +225,26 @@ export default function Landing() {
           ))}
         </section>
 
-        <section id="about" className="impact">
-          <div>
-            <p className="eyebrow">Problem → Solution → Impact</p>
-            <h2>기록 · 이해 · 성장의 루프</h2>
-            <p>
-              스트레스와 정서적 피로가 쌓인 사용자를 위해 감정 기록을 분석하고, 맞춤 피드백과 리포트로 성장
-              경험을 제공합니다. 감정 데이터 기반으로 자기성찰 습관을 돕고, 접근성 높은 정서 케어 도구를
-              제시합니다.
-            </p>
-          </div>
-          <ul>
-            {impactList.map((item) => (
-              <li key={item.title}>
-                <strong>{item.title}</strong>
-                <span>{item.body}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
         <section id="flow" className="flow">
-          <div>
-            <p className="eyebrow">시연 흐름</p>
+          <div className="flow-guide">
+            <p className="eyebrow">사용 흐름</p>
             <h2>Re:Mind 사용 방법</h2>
-            <ol>
-              {flowSteps.map((copy, index) => (
-                <li key={copy}>
-                  <span>{index + 1}</span>
-                  <p>{copy}</p>
+            <ol className="flow-steps">
+              {flowSteps.map((step, index) => (
+                <li key={step.title} className="flow-step">
+                  <span className="step-index">{index + 1}</span>
+                  <div className="step-copy">
+                    <strong>{step.title}</strong>
+                    <p>{step.description}</p>
+                  </div>
                 </li>
               ))}
             </ol>
           </div>
           <div className="card metrics">
-            <h3>비기능 요구사항</h3>
+            <h3>운영 철학</h3>
             <div className="nfr-list">
-              {nfrItems.map((item) => (
+              {productNotes.map((item) => (
                 <article key={item.title}>
                   <strong>{item.title}</strong>
                   <p>{item.body}</p>
@@ -238,14 +254,13 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="service-section" id="contact">
+        <section className="service-section" id="usecases">
           <header>
-            <p className="eyebrow">서비스 구상</p>
-            <h2>핵심 모듈 &amp; 운영 플로우</h2>
-            <p>명세서 기준으로 MVP에 필요한 사용자 여정, AI 분석, 리포트, 운영 도구를 요약했습니다.</p>
+            <p className="eyebrow">Use cases</p>
+            <h2>이렇게 활용됩니다</h2>
           </header>
           <div className="service-grid">
-            {serviceModules.map((service) => (
+            {useCaseCards.map((service) => (
               <article key={service.title} className="service-card">
                 <h3>{service.title}</h3>
                 <p>{service.copy}</p>
@@ -259,13 +274,13 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="closing">
-          <p>오늘의 감정을 기록하고, 내일의 마음을 준비해보세요.</p>
-          <h2>Re:Mind가 당신의 감정 여정을 함께합니다.</h2>
-          <Link className="primary" to="/login">
-            베타 참여하기
-          </Link>
-        </section>
+      <section className="closing" id="contact">
+        <p className="closing-lede">“기록 → 이해 → 루틴”의 감정 케어 경험을 브랜딩부터 운영까지 함께 설계합니다.</p>
+        <h2>Re:Mind와 협업하거나 도입하고 싶으신가요?</h2>
+        <Link className="primary" to="/login">
+          서비스 체험하기
+        </Link>
+      </section>
       </main>
 
       <footer className="landing-footer">
