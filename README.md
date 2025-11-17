@@ -33,7 +33,7 @@ npm run dev
 
 환경 변수를 통한 프런트/백엔드 URL 매핑:
 
-- `Remind-backend/.env` → `CLIENT_ORIGIN=https://remind.ngrok.io`, `SERVER_PUBLIC_URL=https://remind-backend.ngrok.io`
-- `Remind-frontend/.env` → `REACT_APP_API_BASE_URL=https://remind-backend.ngrok.io`
+- `Remind-backend/.env` → `CLIENT_ORIGIN=https://remind.ngrok.io`,
+- `Remind-frontend/.env` → 
 
 자세한 API 설명은 `Remind-backend/README.md`와 각 `src/routes` 폴더를 참고하세요.
